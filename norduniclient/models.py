@@ -533,7 +533,7 @@ class RelationModel(CommonQueries):
     def set_parent(self, org_handle_id):
         q = """
             MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
-            MERGE (n)-[r:parent_of]->(m)
+            MERGE (n)-[r:Parent_of]->(m)
             RETURN m as created, r, n as node
             """
         return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
@@ -926,7 +926,7 @@ class ContactModel(RelationModel):
     def add_role(self, role_handle_id):
         q = """
             MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Role {handle_id: {role_handle_id}})
-            MERGE (n)-[r:is]->(m)
+            MERGE (n)-[r:Is]->(m)
             RETURN m as created, r, n as node
             """
         return self._basic_write_query_to_dict(q, role_handle_id=role_handle_id)
@@ -934,7 +934,7 @@ class ContactModel(RelationModel):
     def add_organization(self, org_handle_id):
         q = """
             MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
-            MERGE (n)-[r:part_of]->(m)
+            MERGE (n)-[r:Part_of]->(m)
             RETURN m as created, r, n as node
             """
         return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
