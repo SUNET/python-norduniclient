@@ -216,7 +216,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_relations(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Has|Parent_of|Member_of|Is]-(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -292,7 +292,7 @@ class CommonQueries(BaseNodeModel):
             MATCH (n:Node {{handle_id: {{handle_id}}}})
             REMOVE n.{property}
             RETURN n
-            """.format(label=property)
+            """.format(property=property)
         with self.manager.session as s:
             node = s.run(q, {'handle_id': self.handle_id}).single()['n']
         return self.reload(node=node)
@@ -934,7 +934,7 @@ class ContactModel(RelationModel):
     def add_organization(self, org_handle_id):
         q = """
             MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
-            MERGE (n)-[r:Part_of]->(m)
+            MERGE (n)-[r:Works_for]->(m)
             RETURN m as created, r, n as node
             """
         return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
