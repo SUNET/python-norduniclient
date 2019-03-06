@@ -533,7 +533,7 @@ class RelationModel(CommonQueries):
     def set_parent(self, org_handle_id):
         q = """
             MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
-            MERGE (n)-[r:Parent_of]->(m)
+            MERGE (m)-[r:Parent_of]->(n)
             RETURN m as created, r, n as node
             """
         return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
