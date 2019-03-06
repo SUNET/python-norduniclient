@@ -216,7 +216,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_relations(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Has|Parent_of|Member_of|Is]-(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -277,6 +277,25 @@ class CommonQueries(BaseNodeModel):
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
+    def add_property(self, property, value):
+        q = """
+            MATCH (n:Node {{handle_id: {{handle_id}}}})
+            SET n.{property} = '{value}'
+            RETURN n
+            """.format(property=property, value=value)
+        with self.manager.session as s:
+            node = s.run(q, {'handle_id': self.handle_id}).single()['n']
+        return self.reload(node=node)
+
+    def remove_property(self, property):
+        q = """
+            MATCH (n:Node {{handle_id: {{handle_id}}}})
+            REMOVE n.{property}
+            RETURN n
+            """.format(property=property)
+        with self.manager.session as s:
+            node = s.run(q, {'handle_id': self.handle_id}).single()['n']
+        return self.reload(node=node)
 
 class LogicalModel(CommonQueries):
 
@@ -510,6 +529,14 @@ class RelationModel(CommonQueries):
             RETURN r, usable as node
             """
         return self._basic_read_query_to_dict(q)
+
+    def set_parent(self, org_handle_id):
+        q = """
+            MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
+            MERGE (m)-[r:Parent_of]->(n)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
 
 
 class EquipmentModel(PhysicalModel):
@@ -892,4 +919,34 @@ class CustomerModel(RelationModel):
 
 
 class ProviderModel(RelationModel):
+    pass
+
+
+class ContactModel(RelationModel):
+    def add_role(self, role_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Role {handle_id: {role_handle_id}})
+            MERGE (n)-[r:Is]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, role_handle_id=role_handle_id)
+
+    def add_organization(self, org_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
+            MERGE (n)-[r:Works_for]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
+
+
+class GroupModel(LogicalModel):
+    pass
+
+
+class RoleModel(LogicalModel):
+    pass
+
+
+class ProcedureModel(LogicalModel):
     pass
