@@ -574,8 +574,8 @@ class ModelsTests(Neo4jTestCase):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
         organization2 = core.get_node_model(self.neo4jdb, handle_id='114')
         organization2.set_parent(organization1.handle_id)
-        relations = organization1.get_relations()
-        self.assertIsInstance(relations['Parent_of'][0]['node'], models.RelationModel)
+        relations = organization2.get_relations()
+        self.assertIsInstance(relations['Parent_of'][0]['node'], models.OrganizationModel)
 
     # TODO: EquipmentModel get_ports should probably work as CommonQueries get_ports
     def test_get_ports_equipment_model(self):
