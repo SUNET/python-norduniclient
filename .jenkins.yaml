@@ -9,6 +9,7 @@ pre_build_script:
 script:
   - "python3.7 -m venv venv"
   - ". venv/bin/activate"
+  - "pip install -U setuptools wheel mypy"
   - "python setup.py testing"
   - "pip freeze"
   - "python setup.py test"
