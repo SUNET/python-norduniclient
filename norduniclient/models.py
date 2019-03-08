@@ -241,7 +241,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_relations(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Has|Parent_of|Member_of|Is|Uses_a]-(node)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Parent_of|Member_of|Is|Uses_a]-(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
