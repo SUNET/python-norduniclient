@@ -9,6 +9,8 @@ except ImportError:  # Fix circular import in python 2 vs python 3
     # Python 3
     from norduniclient import core
 
+import six
+
 __author__ = 'lundberg'
 
 
@@ -189,6 +191,29 @@ class BaseNodeModel(object):
     def reload(self, node=None):
         return core.get_node_model(self.manager, self.handle_id, node=node)
 
+    def add_property(self, property, value):
+        if isinstance(value, six.string_types):
+            value = "'{}'".format(value)
+
+        q = """
+            MATCH (n:Node {{handle_id: {{handle_id}}}})
+            SET n.{property} = {value}
+            RETURN n
+            """.format(property=property, value=value)
+        with self.manager.session as s:
+            node = s.run(q, {'handle_id': self.handle_id}).single()['n']
+        return self.reload(node=node)
+
+    def remove_property(self, property):
+        q = """
+            MATCH (n:Node {{handle_id: {{handle_id}}}})
+            REMOVE n.{property}
+            RETURN n
+            """.format(property=property)
+        with self.manager.session as s:
+            node = s.run(q, {'handle_id': self.handle_id}).single()['n']
+        return self.reload(node=node)
+
 
 class CommonQueries(BaseNodeModel):
 
@@ -216,7 +241,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_relations(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Parent_of|Member_of|Is|Uses_a]-(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -276,7 +301,6 @@ class CommonQueries(BaseNodeModel):
             ORDER BY parent.name
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
-
 
 class LogicalModel(CommonQueries):
 
@@ -890,6 +914,61 @@ class FPCModel(SubEquipmentModel):
 class CustomerModel(RelationModel):
     pass
 
+class OrganizationModel(RelationModel):
+    def set_parent(self, org_handle_id):
+        q = """
+            MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
+            MERGE (m)-[r:Parent_of]->(n)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
+
+    def add_procedure(self, proc_handle_id):
+        q = """
+            MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Procedure {handle_id: {proc_handle_id}})
+            MERGE (n)-[r:Uses_a]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, proc_handle_id=proc_handle_id)
+
 
 class ProviderModel(RelationModel):
+    pass
+
+
+class ContactModel(RelationModel):
+    def add_role(self, role_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Role {handle_id: {role_handle_id}})
+            MERGE (n)-[r:Is]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, role_handle_id=role_handle_id)
+
+    def add_organization(self, org_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
+            MERGE (n)-[r:Works_for]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
+
+    def add_group(self, group_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Group {handle_id: {group_handle_id}})
+            MERGE (n)-[r:Member_of]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, group_handle_id=group_handle_id)
+
+
+class GroupModel(LogicalModel):
+    pass
+
+
+class RoleModel(LogicalModel):
+    pass
+
+
+class ProcedureModel(LogicalModel):
     pass
