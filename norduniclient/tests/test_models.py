@@ -215,9 +215,8 @@ class ModelsTests(Neo4jTestCase):
         node_model_1 = node_model_1.add_property('first_name', first_name)
         new_data = node_model_1.data
         new_property = {'first_name': first_name}
-        expected_data = dict(initial_data.items() + new_property.items() +
-            [(k, initial_data[k] + new_property[k]) \
-                for k in set(new_property) & set(initial_data)]) # dict merge
+        expected_data = initial_data.copy()
+        expected_data.update(new_property)
         self.assertEqual(sorted(new_data), sorted(expected_data))
         node_model_1 = node_model_1.remove_property('first_name')
         new_data = node_model_1.data
