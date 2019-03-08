@@ -953,6 +953,14 @@ class ContactModel(RelationModel):
             """
         return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
 
+    def add_group(self, group_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Group {handle_id: {group_handle_id}})
+            MERGE (n)-[r:Member_of]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, group_handle_id=group_handle_id)
+
 
 class GroupModel(LogicalModel):
     pass
