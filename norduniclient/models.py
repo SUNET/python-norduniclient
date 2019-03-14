@@ -969,6 +969,12 @@ class ContactModel(RelationModel):
             """
         return self._basic_write_query_to_dict(q, group_handle_id=group_handle_id)
 
+    def get_outgoing_relations(self):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of|Is]->(node)
+            RETURN r, node
+            """
+        return self._basic_read_query_to_dict(q)
 
 class GroupModel(LogicalModel):
     pass
