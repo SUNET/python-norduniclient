@@ -149,12 +149,16 @@ class ModelsTests(Neo4jTestCase):
             (contact2:Node:Relation:Contact{name:'Contact2', handle_id:'116'}),
             (role1:Node:Logical:Role{name:'Role1', handle_id:'117'}),
             (role2:Node:Logical:Role{name:'Role2', handle_id:'118'}),
+            (procedure1:Node:Logical:Procedure{name:'Procedure1', handle_id:'119'}),
+            (procedure2:Node:Logical:Procedure{name:'Procedure2', handle_id:'120'}),
+
 
             // Create relationships
             (contact1)-[:Is]->(role1),
             (contact2)-[:Is]->(role2),
             (contact1)-[:Works_for]->(organization1),
-            (contact2)-[:Works_for]->(organization2)
+            (contact2)-[:Works_for]->(organization2),
+            (organization1)-[:Uses_a]->(procedure1)
             """
 
         # Insert mocked network
@@ -575,6 +579,26 @@ class ModelsTests(Neo4jTestCase):
         organization2.set_parent(organization1.handle_id)
         relations = organization2.get_relations()
         self.assertIsInstance(relations['Parent_of'][0]['node'], models.OrganizationModel)
+
+    def test_get_outgoing_relations(self):
+        contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
+        relations = contact1.get_outgoing_relations()
+
+        self.assertIsInstance(relations['Works_for'][0]['node'], models.OrganizationModel)
+        self.assertIsInstance(relations['Is'][0]['node'], models.RoleModel)
+
+    def test_uses_a_procedure(self):
+        organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
+        organization2 = core.get_node_model(self.neo4jdb, handle_id='114')
+        procedure1 = core.get_node_model(self.neo4jdb, handle_id='119')
+        procedure2 = core.get_node_model(self.neo4jdb, handle_id='120')
+
+        relations1 = procedure1.get_relations()
+        self.assertIsInstance(relations1['Uses_a'][0]['node'], models.OrganizationModel)
+
+        organization2.add_procedure(procedure2.handle_id)
+        relations2 = procedure2.get_relations()
+        self.assertIsInstance(relations2['Uses_a'][0]['node'], models.OrganizationModel)
 
     # TODO: EquipmentModel get_ports should probably work as CommonQueries get_ports
     def test_get_ports_equipment_model(self):
