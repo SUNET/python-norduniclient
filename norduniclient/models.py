@@ -939,6 +939,13 @@ class OrganizationModel(RelationModel):
             """
         return self._basic_write_query_to_dict(q, proc_handle_id=proc_handle_id)
 
+    def get_outgoing_relations(self):
+        q = """
+            MATCH (n:Node:Organization {handle_id: {handle_id}})-[r:Parent|Uses_a]->(node)
+            RETURN r, node
+            """
+        return self._basic_read_query_to_dict(q)
+
 
 class ProviderModel(RelationModel):
     pass
@@ -977,7 +984,13 @@ class ContactModel(RelationModel):
         return self._basic_read_query_to_dict(q)
 
 class GroupModel(LogicalModel):
-    pass
+    def add_member(self, contact_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {contact_handle_id}}), (m:Node:Group {handle_id: {handle_id}})
+            MERGE (n)-[r:Member_of]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, contact_handle_id=contact_handle_id)
 
 
 class RoleModel(LogicalModel):

@@ -151,6 +151,7 @@ class ModelsTests(Neo4jTestCase):
             (role2:Node:Logical:Role{name:'Role2', handle_id:'118'}),
             (procedure1:Node:Logical:Procedure{name:'Procedure1', handle_id:'119'}),
             (procedure2:Node:Logical:Procedure{name:'Procedure2', handle_id:'120'}),
+            (group1:Node:Logical:Group{name:'Group1', handle_id:'121'}),
 
 
             // Create relationships
@@ -599,6 +600,18 @@ class ModelsTests(Neo4jTestCase):
         organization2.add_procedure(procedure2.handle_id)
         relations2 = procedure2.get_relations()
         self.assertIsInstance(relations2['Uses_a'][0]['node'], models.OrganizationModel)
+
+    def test_organization_outgoingrel(self):
+        organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
+        relations1 = organization1.get_outgoing_relations()
+        self.assertIsInstance(relations1['Uses_a'][0]['node'], models.ProcedureModel)
+
+    def test_groups(self):
+        group1 = core.get_node_model(self.neo4jdb, handle_id='121')
+        contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
+        group1.add_member(contact1.handle_id)
+        relations = contact1.get_outgoing_relations()
+        self.assertIsInstance(relations['Member_of'][0]['node'], models.GroupModel)
 
     # TODO: EquipmentModel get_ports should probably work as CommonQueries get_ports
     def test_get_ports_equipment_model(self):
