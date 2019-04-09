@@ -946,6 +946,28 @@ class OrganizationModel(RelationModel):
             """
         return self._basic_read_query_to_dict(q)
 
+    def get_contacts(self):
+        q = """
+            MATCH (c:Node:Contact)-[:Works_for]->(o:Node:Organization)
+            WHERE o.handle_id = {handle_id}
+            RETURN c.handle_id as handle_id, c.name as name
+            """
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
+    def remove_role_from_contacts(self, rolename):
+        handle_id = self.handle_id
+        if isinstance(self.handle_id, six.string_types):
+            handle_id = "'{}'".format(handle_id)
+
+        q = """
+            MATCH (role:Node:Role)<-[r:Is]-(cont:Node:Contact)-[:Works_for]->(org:Node:Organization)
+            WHERE org.handle_id = {handle_id} AND role.name = '{rolename}'
+            DELETE r
+            RETURN cont
+            """.format(handle_id=handle_id, rolename=rolename)
+
+        return core.query_to_dict(self.manager, q)
+
 
 class ProviderModel(RelationModel):
     pass
