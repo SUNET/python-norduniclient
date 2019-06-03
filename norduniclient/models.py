@@ -1019,5 +1019,64 @@ class RoleModel(LogicalModel):
     pass
 
 
+class RoleRelationship(BaseRelationshipModel):
+    ROLE_TYPE = 'Works_for'
+
+    def __init__(self, manager):
+        super(RoleRelationship, self).__init__(manager)
+        self.type = RoleRelationship.ROLE_TYPE
+        self.name = None
+
+    def load(self, relationship_bundle):
+        super(RoleRelationship, self).load(relationship_bundle)
+        self.type = RoleRelationship.ROLE_TYPE
+        self.name = self.data.get('name', None)
+
+        return self
+
+    @classmethod
+    def link_contact_organization(cls, contact_id, organization_id, rolename):
+        # create relation
+        manager = core.GraphDB.get_instance().manager
+        relation_id = core._create_relationship(manager, organization_id, contact_id, cls.ROLE_TYPE)
+
+        # add name
+        data = { "name": rolename }
+        core.set_relationship_properties(manager, relation_id, data)
+
+        # load and return
+        relation = cls.get_relationship_model(manager, relationship_id=relation_id)
+
+        return relation
+
+    @classmethod
+    def get_relationship_model(cls, manager, relationship_id):
+        """
+        :param manager: Context manager to handle transactions
+        :type manager: Neo4jDBSessionManager
+        :param relationship_id: Internal Neo4j relationship id
+        :type relationship_id: int
+        :return: Relationship model
+        :rtype: models.BaseRelationshipModel
+        """
+        manager = core.GraphDB.get_instance().manager
+        bundle = core.get_relationship_bundle(manager, relationship_id)
+        return cls(manager).load(bundle)
+
+    @classmethod
+    def get_all_roles(cls):
+        manager = core.GraphDB.get_instance().manager
+        q = """MATCH (n:Contact)-[r:Works_for]->(m:Organization)
+            WHERE r.name IS NOT NULL
+            RETURN r.name as role_name"""
+
+        result = core.query_to_list(manager, q)
+        endresult = []
+        for r in result:
+            if r['role_name'] not in endresult:
+                endresult.append(r['role_name'])
+
+        return endresult
+
 class ProcedureModel(LogicalModel):
     pass
