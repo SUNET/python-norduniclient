@@ -241,7 +241,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_relations(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Parent_of|Member_of|Is|Uses_a]-(node)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for|Works_for|Parent_of|Member_of|Uses_a]-(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -954,42 +954,12 @@ class OrganizationModel(RelationModel):
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
-    def remove_role_from_contacts(self, rolename):
-        handle_id = self.handle_id
-        if isinstance(self.handle_id, six.string_types):
-            handle_id = "'{}'".format(handle_id)
-
-        q = """
-            MATCH (role:Node:Role)<-[r:Is]-(cont:Node:Contact)-[:Works_for]->(org:Node:Organization)
-            WHERE org.handle_id = {handle_id} AND role.name = '{rolename}'
-            DELETE r
-            RETURN cont
-            """.format(handle_id=handle_id, rolename=rolename)
-
-        return core.query_to_dict(self.manager, q)
-
 
 class ProviderModel(RelationModel):
     pass
 
 
 class ContactModel(RelationModel):
-    def add_role(self, role_handle_id):
-        q = """
-            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Role {handle_id: {role_handle_id}})
-            MERGE (n)-[r:Is]->(m)
-            RETURN m as created, r, n as node
-            """
-        return self._basic_write_query_to_dict(q, role_handle_id=role_handle_id)
-
-    def add_organization(self, org_handle_id):
-        q = """
-            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
-            MERGE (n)-[r:Works_for]->(m)
-            RETURN m as created, r, n as node
-            """
-        return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
-
     def add_group(self, group_handle_id):
         q = """
             MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Group {handle_id: {group_handle_id}})
@@ -1000,7 +970,7 @@ class ContactModel(RelationModel):
 
     def get_outgoing_relations(self):
         q = """
-            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of|Is]->(node)
+            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of]->(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -1013,10 +983,6 @@ class GroupModel(LogicalModel):
             RETURN m as created, r, n as node
             """
         return self._basic_write_query_to_dict(q, contact_handle_id=contact_handle_id)
-
-
-class RoleModel(LogicalModel):
-    pass
 
 
 class RoleRelationship(BaseRelationshipModel):
@@ -1036,18 +1002,48 @@ class RoleRelationship(BaseRelationshipModel):
 
     @classmethod
     def link_contact_organization(cls, contact_id, organization_id, rolename):
+        if isinstance(contact_id, six.string_types):
+            contact_id = "'{}'".format(contact_id)
+
+        if isinstance(organization_id, six.string_types):
+            organization_id = "'{}'".format(organization_id)
+
+        if not rolename:
+            rolename = ""
+
         # create relation
         manager = core.GraphDB.get_instance().manager
-        relation_id = core._create_relationship(manager, organization_id, contact_id, cls.ROLE_TYPE)
 
-        # add name
-        data = { "name": rolename }
-        core.set_relationship_properties(manager, relation_id, data)
+        q = """
+            MATCH (c:Contact), (o:Organization)
+            WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
+            MERGE (c)-[r:Works_for {{ name: '{rolename}'}}]->(o)
+            RETURN ID(r) as relation_id
+            """.format(contact_id=contact_id, organization_id=organization_id, rolename=rolename)
+        ret = core.query_to_dict(manager, q)
 
         # load and return
-        relation = cls.get_relationship_model(manager, relationship_id=relation_id)
+        if ret:
+            relation_id = ret['relation_id']
+            relation = cls.get_relationship_model(manager, relationship_id=relation_id)
 
-        return relation
+            return relation
+
+    @classmethod
+    def unlink_contact_organization(cls, contact_id, organization_id):
+        if isinstance(contact_id, six.string_types):
+            contact_id = "'{}'".format(contact_id)
+
+        if isinstance(organization_id, six.string_types):
+            organization_id = "'{}'".format(organization_id)
+
+        manager = core.GraphDB.get_instance().manager
+        q = """
+            MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
+            WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
+            DELETE r RETURN c
+            """
+        core.query_to_dict(manager, q, contact_id=contact_id, organization_id=organization_id)
 
     @classmethod
     def get_relationship_model(cls, manager, relationship_id):
