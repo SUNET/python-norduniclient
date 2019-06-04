@@ -1045,6 +1045,24 @@ class RoleRelationship(BaseRelationshipModel):
             """
         core.query_to_dict(manager, q, contact_id=contact_id, organization_id=organization_id)
 
+    def load_from_nodes(self, contact_id, organization_id):
+        if isinstance(contact_id, six.string_types):
+            contact_id = "'{}'".format(contact_id)
+
+        if isinstance(organization_id, six.string_types):
+            organization_id = "'{}'".format(organization_id)
+
+        q = """
+            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+            WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
+            RETURN ID(r) as relation_id
+            """.format(contact_id=contact_id, organization_id=organization_id)
+
+        ret = core.query_to_dict(self.manager, q)
+        
+        bundle = core.get_relationship_bundle(self.manager, ret['relation_id'])
+        self.load(bundle)
+
     @classmethod
     def get_relationship_model(cls, manager, relationship_id):
         """
