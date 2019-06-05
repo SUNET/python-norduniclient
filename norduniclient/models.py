@@ -950,7 +950,7 @@ class OrganizationModel(RelationModel):
         q = """
             MATCH (c:Node:Contact)-[:Works_for]->(o:Node:Organization)
             WHERE o.handle_id = {handle_id}
-            RETURN c.handle_id as handle_id, c.name as name
+            RETURN DISTINCT c.handle_id as handle_id, c.name as name
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
@@ -1059,7 +1059,7 @@ class RoleRelationship(BaseRelationshipModel):
             """.format(contact_id=contact_id, organization_id=organization_id)
 
         ret = core.query_to_dict(self.manager, q)
-        
+
         bundle = core.get_relationship_bundle(self.manager, ret['relation_id'])
         self.load(bundle)
 
