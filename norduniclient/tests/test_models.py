@@ -584,14 +584,18 @@ class ModelsTests(Neo4jTestCase):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
 
         # unlink
-        models.RoleRelationship.unlink_contact_organization(contact1.handle_id, organization1.handle_id)
+        models.RoleRelationship.unlink_contact_organization(contact1.handle_id, organization1.handle_id, self.neo4jdb)
         relations = contact1.get_outgoing_relations()
         self.assertIsNotNone(relations)
 
         # relink
-        models.RoleRelationship.link_contact_organization(contact1.handle_id, organization1.handle_id, 'IT-Manager')
+        models.RoleRelationship.link_contact_organization(contact1.handle_id, organization1.handle_id, 'IT-Manager', self.neo4jdb)
         relations = contact1.get_outgoing_relations()
         self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': 'IT-Manager'})
+
+        # check role list
+        role_list = models.RoleRelationship.get_all_roles(self.neo4jdb)
+        self.assertEquals(role_list, [u'IT-Manager', u'Abuse Management'])
 
     def test_uses_a_procedure(self):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')

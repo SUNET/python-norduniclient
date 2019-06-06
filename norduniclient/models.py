@@ -1001,7 +1001,7 @@ class RoleRelationship(BaseRelationshipModel):
         return self
 
     @classmethod
-    def link_contact_organization(cls, contact_id, organization_id, rolename):
+    def link_contact_organization(cls, contact_id, organization_id, rolename, manager=None):
         if isinstance(contact_id, six.string_types):
             contact_id = "'{}'".format(contact_id)
 
@@ -1012,7 +1012,8 @@ class RoleRelationship(BaseRelationshipModel):
             rolename = ""
 
         # create relation
-        manager = core.GraphDB.get_instance().manager
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
 
         q = """
             MATCH (c:Contact), (o:Organization)
@@ -1030,14 +1031,16 @@ class RoleRelationship(BaseRelationshipModel):
             return relation
 
     @classmethod
-    def unlink_contact_organization(cls, contact_id, organization_id):
+    def unlink_contact_organization(cls, contact_id, organization_id, manager=None):
         if isinstance(contact_id, six.string_types):
             contact_id = "'{}'".format(contact_id)
 
         if isinstance(organization_id, six.string_types):
             organization_id = "'{}'".format(organization_id)
 
-        manager = core.GraphDB.get_instance().manager
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
         q = """
             MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
             WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
@@ -1073,22 +1076,25 @@ class RoleRelationship(BaseRelationshipModel):
         :return: Relationship model
         :rtype: models.BaseRelationshipModel
         """
-        manager = core.GraphDB.get_instance().manager
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
         bundle = core.get_relationship_bundle(manager, relationship_id)
         return cls(manager).load(bundle)
 
     @classmethod
-    def get_all_roles(cls):
-        manager = core.GraphDB.get_instance().manager
+    def get_all_roles(cls, manager=None):
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
         q = """MATCH (n:Contact)-[r:Works_for]->(m:Organization)
             WHERE r.name IS NOT NULL
-            RETURN r.name as role_name"""
+            RETURN DISTINCT r.name as role_name"""
 
         result = core.query_to_list(manager, q)
         endresult = []
         for r in result:
-            if r['role_name'] not in endresult:
-                endresult.append(r['role_name'])
+            endresult.append(r['role_name'])
 
         return endresult
 
