@@ -147,18 +147,14 @@ class ModelsTests(Neo4jTestCase):
             (organization2:Node:Relation:Organization{name:'Organization2', handle_id:'114'}),
             (contact1:Node:Relation:Contact{name:'Contact1', handle_id:'115'}),
             (contact2:Node:Relation:Contact{name:'Contact2', handle_id:'116'}),
-            (role1:Node:Logical:Role{name:'Role1', handle_id:'117'}),
-            (role2:Node:Logical:Role{name:'Role2', handle_id:'118'}),
             (procedure1:Node:Logical:Procedure{name:'Procedure1', handle_id:'119'}),
             (procedure2:Node:Logical:Procedure{name:'Procedure2', handle_id:'120'}),
             (group1:Node:Logical:Group{name:'Group1', handle_id:'121'}),
 
 
             // Create relationships
-            (role1)<-[:Is]-(contact1),
-            (role2)<-[:Is]-(contact2),
-            (contact1)-[:Works_for]->(organization1),
-            (contact2)-[:Works_for]->(organization2),
+            (contact1)-[:Works_for {name: 'IT-Manager'}]->(organization1),
+            (contact2)-[:Works_for {name: 'Abuse Management'}]->(organization2),
             (organization1)-[:Uses_a]->(procedure1)
             """
 
@@ -329,10 +325,6 @@ class ModelsTests(Neo4jTestCase):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
         relations = organization1.get_relations()
         self.assertIsInstance(relations['Works_for'][0]['node'], models.RelationModel)
-
-        role1 = core.get_node_model(self.neo4jdb, handle_id='117')
-        relations = role1.get_relations()
-        self.assertIsInstance(relations['Is'][0]['node'], models.RelationModel)
 
     def test_get_dependencies(self):
         logical3 = core.get_node_model(self.neo4jdb, handle_id='107')
@@ -584,9 +576,26 @@ class ModelsTests(Neo4jTestCase):
     def test_get_outgoing_relations(self):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
         relations = contact1.get_outgoing_relations()
-
         self.assertIsInstance(relations['Works_for'][0]['node'], models.OrganizationModel)
-        self.assertIsInstance(relations['Is'][0]['node'], models.RoleModel)
+        self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': 'IT-Manager'})
+
+    def test_contact_role_org(self):
+        contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
+        organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
+
+        # unlink
+        models.RoleRelationship.unlink_contact_organization(contact1.handle_id, organization1.handle_id, self.neo4jdb)
+        relations = contact1.get_outgoing_relations()
+        self.assertIsNotNone(relations)
+
+        # relink
+        models.RoleRelationship.link_contact_organization(contact1.handle_id, organization1.handle_id, 'IT-Manager', self.neo4jdb)
+        relations = contact1.get_outgoing_relations()
+        self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': 'IT-Manager'})
+
+        # check role list
+        role_list = models.RoleRelationship.get_all_roles(self.neo4jdb)
+        self.assertEquals(role_list, [u'IT-Manager', u'Abuse Management'])
 
     def test_uses_a_procedure(self):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
@@ -612,14 +621,6 @@ class ModelsTests(Neo4jTestCase):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
         self.assertEqual(contact1.handle_id, contacts[0]['handle_id'])
         self.assertEqual(contact1.data['name'], contacts[0]['name'])
-
-    def test_detach_contact(self):
-        role1 = core.get_node_model(self.neo4jdb, handle_id='117')
-        organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
-        organization1.remove_role_from_contacts(role1.data['name'])
-        contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
-        relations = contact1.get_outgoing_relations()
-        self.assertTrue('Is' not in relations)
 
     def test_groups(self):
         group1 = core.get_node_model(self.neo4jdb, handle_id='121')
