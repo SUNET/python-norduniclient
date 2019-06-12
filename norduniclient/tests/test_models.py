@@ -597,6 +597,15 @@ class ModelsTests(Neo4jTestCase):
         role_list = models.RoleRelationship.get_all_roles(self.neo4jdb)
         self.assertEquals(role_list, [u'IT-Manager', u'Abuse Management'])
 
+        # get contact with role
+        contact_list = models.RoleRelationship.get_contact_with_role(organization1.handle_id, 'IT-Manager', self.neo4jdb)
+        self.assertEquals(contact_list, {'handle_id': '115'})
+
+        # remove free role in organization
+        models.RoleRelationship.remove_role_in_organization(organization1.handle_id, 'IT-Manager', self.neo4jdb)
+        relations = organization1.get_relations()
+        self.assertEquals(relations, {})
+
     def test_uses_a_procedure(self):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
         organization2 = core.get_node_model(self.neo4jdb, handle_id='114')
