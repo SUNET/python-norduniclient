@@ -1048,6 +1048,30 @@ class RoleRelationship(BaseRelationshipModel):
             """
         core.query_to_dict(manager, q, contact_id=contact_id, organization_id=organization_id)
 
+    @classmethod
+    def get_contact_with_role(cls, organization_id, role_name, manager=None):
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
+        q = """
+            MATCH (o:Organization {handle_id: {organization_id}})<-[:Works_for {name: {role_name}}]-(c:Contact)
+            RETURN c.handle_id AS handle_id
+            """
+
+        return core.query_to_dict(manager, q, organization_id=organization_id, role_name=role_name)
+
+    @classmethod
+    def remove_role_in_organization(cls, organization_id, role_name, manager=None):
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
+        q = """
+            MATCH (o:Organization {handle_id: {organization_id}})<-[r:Works_for {name: {role_name}}]-(c:Contact)
+            DELETE r RETURN o
+            """
+
+        return core.query_to_dict(manager, q, organization_id=organization_id, role_name=role_name)
+
     def load_from_nodes(self, contact_id, organization_id):
         if isinstance(contact_id, six.string_types):
             contact_id = "'{}'".format(contact_id)
