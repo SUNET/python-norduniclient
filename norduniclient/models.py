@@ -1001,6 +1001,13 @@ class RoleRelationship(BaseRelationshipModel):
         return self
 
     @classmethod
+    def get_manager(cls, manager):
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
+        return manager
+
+    @classmethod
     def link_contact_organization(cls, contact_id, organization_id, rolename, manager=None):
         if isinstance(contact_id, six.string_types):
             contact_id = "'{}'".format(contact_id)
@@ -1012,8 +1019,7 @@ class RoleRelationship(BaseRelationshipModel):
             rolename = ""
 
         # create relation
-        if not manager:
-            manager = core.GraphDB.get_instance().manager
+        manager = cls.get_manager(manager)
 
         q = """
             MATCH (c:Contact), (o:Organization)
@@ -1038,8 +1044,7 @@ class RoleRelationship(BaseRelationshipModel):
         if isinstance(organization_id, six.string_types):
             organization_id = "'{}'".format(organization_id)
 
-        if not manager:
-            manager = core.GraphDB.get_instance().manager
+        manager = cls.get_manager(manager)
 
         q = """
             MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
@@ -1050,8 +1055,7 @@ class RoleRelationship(BaseRelationshipModel):
 
     @classmethod
     def get_contact_with_role(cls, organization_id, role_name, manager=None):
-        if not manager:
-            manager = core.GraphDB.get_instance().manager
+        manager = cls.get_manager(manager)
 
         q = """
             MATCH (o:Organization {handle_id: {organization_id}})<-[:Works_for {name: {role_name}}]-(c:Contact)
@@ -1062,8 +1066,7 @@ class RoleRelationship(BaseRelationshipModel):
 
     @classmethod
     def remove_role_in_organization(cls, organization_id, role_name, manager=None):
-        if not manager:
-            manager = core.GraphDB.get_instance().manager
+        manager = cls.get_manager(manager)
 
         q = """
             MATCH (o:Organization {handle_id: {organization_id}})<-[r:Works_for {name: {role_name}}]-(c:Contact)
@@ -1100,16 +1103,14 @@ class RoleRelationship(BaseRelationshipModel):
         :return: Relationship model
         :rtype: models.BaseRelationshipModel
         """
-        if not manager:
-            manager = core.GraphDB.get_instance().manager
+        manager = cls.get_manager(manager)
 
         bundle = core.get_relationship_bundle(manager, relationship_id)
         return cls(manager).load(bundle)
 
     @classmethod
     def get_all_roles(cls, manager=None):
-        if not manager:
-            manager = core.GraphDB.get_instance().manager
+        manager = cls.get_manager(manager)
 
         q = """MATCH (n:Contact)-[r:Works_for]->(m:Organization)
             WHERE r.name IS NOT NULL
@@ -1121,6 +1122,28 @@ class RoleRelationship(BaseRelationshipModel):
             endresult.append(r['role_name'])
 
         return endresult
+
+    @classmethod
+    def get_contacts_with_role(cls, role_name, manager=None):
+        manager = cls.get_manager(manager)
+
+        q = """
+            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+            WHERE r.name = {role_name}
+            RETURN c
+            """
+
+        result = core.query_to_list(manager, q, role_name=role_name)
+        contact_list = []
+
+        for node in result:
+            contact = ContactModel(manager)
+            contact.data = {}
+            contact.data['handle_id'] = node['c'].properties['handle_id']
+            contact.reload(node['c'])
+            contact_list.append(contact)
+
+        return contact_list
 
 class ProcedureModel(LogicalModel):
     pass
