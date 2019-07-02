@@ -986,16 +986,16 @@ class GroupModel(LogicalModel):
 
 
 class RoleRelationship(BaseRelationshipModel):
-    ROLE_TYPE = 'Works_for'
+    RELATION_NAME = 'Works_for'
 
     def __init__(self, manager):
         super(RoleRelationship, self).__init__(manager)
-        self.type = RoleRelationship.ROLE_TYPE
+        self.type = RoleRelationship.RELATION_NAME
         self.name = None
 
     def load(self, relationship_bundle):
         super(RoleRelationship, self).load(relationship_bundle)
-        self.type = RoleRelationship.ROLE_TYPE
+        self.type = RoleRelationship.RELATION_NAME
         self.name = self.data.get('name', None)
 
         return self
