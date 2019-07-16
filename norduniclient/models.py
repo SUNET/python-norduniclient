@@ -1130,7 +1130,7 @@ class RoleRelationship(BaseRelationshipModel):
         q = """
             MATCH (c:Contact)-[r:Works_for]->(o:Organization)
             WHERE r.name = {role_name}
-            RETURN c
+            RETURN c, o
             """
 
         result = core.query_to_list(manager, q, role_name=role_name)
@@ -1141,7 +1141,13 @@ class RoleRelationship(BaseRelationshipModel):
             contact.data = {}
             contact.data['handle_id'] = node['c'].properties['handle_id']
             contact.reload(node['c'])
-            contact_list.append(contact)
+
+            organization = OrganizationModel(manager)
+            organization.data = {}
+            organization.data['handle_id'] = node['o'].properties['handle_id']
+            organization.reload(node['o'])
+
+            contact_list.append((contact, organization))
 
         return contact_list
 
