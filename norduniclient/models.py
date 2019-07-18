@@ -1008,7 +1008,7 @@ class RoleRelationship(BaseRelationshipModel):
         return manager
 
     @classmethod
-    def link_contact_organization(cls, contact_id, organization_id, rolename, manager=None):
+    def link_contact_organization(cls, contact_id, organization_id, role_handle_id, rolename, manager=None):
         if isinstance(contact_id, six.string_types):
             contact_id = "'{}'".format(contact_id)
 
@@ -1024,9 +1024,9 @@ class RoleRelationship(BaseRelationshipModel):
         q = """
             MATCH (c:Contact), (o:Organization)
             WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
-            MERGE (c)-[r:Works_for {{ name: '{rolename}'}}]->(o)
+            MERGE (c)-[r:Works_for {{ name: '{rolename}', handle_id: {role_handle_id}}}]->(o)
             RETURN ID(r) as relation_id
-            """.format(contact_id=contact_id, organization_id=organization_id, rolename=rolename)
+            """.format(contact_id=contact_id, organization_id=organization_id, rolename=rolename, role_handle_id=role_handle_id)
         ret = core.query_to_dict(manager, q)
 
         # load and return
@@ -1124,7 +1124,7 @@ class RoleRelationship(BaseRelationshipModel):
         return endresult
 
     @classmethod
-    def get_contacts_with_role(cls, role_name, manager=None):
+    def get_contacts_with_role_name(cls, role_name, manager=None):
         manager = cls.get_manager(manager)
 
         q = """
@@ -1134,6 +1134,34 @@ class RoleRelationship(BaseRelationshipModel):
             """
 
         result = core.query_to_list(manager, q, role_name=role_name)
+        contact_list = []
+
+        for node in result:
+            contact = ContactModel(manager)
+            contact.data = {}
+            contact.data['handle_id'] = node['c'].properties['handle_id']
+            contact.reload(node['c'])
+
+            organization = OrganizationModel(manager)
+            organization.data = {}
+            organization.data['handle_id'] = node['o'].properties['handle_id']
+            organization.reload(node['o'])
+
+            contact_list.append((contact, organization))
+
+        return contact_list
+
+    @classmethod
+    def get_contacts_with_role_id(cls, handle_id, manager=None):
+        manager = cls.get_manager(manager)
+
+        q = """
+            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+            WHERE r.handle_id = {handle_id}
+            RETURN c, o
+            """
+
+        result = core.query_to_list(manager, q, handle_id=handle_id)
         contact_list = []
 
         for node in result:

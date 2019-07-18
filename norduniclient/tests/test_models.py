@@ -582,6 +582,8 @@ class ModelsTests(Neo4jTestCase):
     def test_contact_role_org(self):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
+        role_name = 'IT-Manager'
+        role = Role.objects.get_or_create(name = role_name)[0]
 
         # unlink
         models.RoleRelationship.unlink_contact_organization(contact1.handle_id, organization1.handle_id, self.neo4jdb)
@@ -589,20 +591,20 @@ class ModelsTests(Neo4jTestCase):
         self.assertIsNotNone(relations)
 
         # relink
-        models.RoleRelationship.link_contact_organization(contact1.handle_id, organization1.handle_id, 'IT-Manager', self.neo4jdb)
+        models.RoleRelationship.link_contact_organization(contact1.handle_id, organization1.handle_id, role.name, role.handle_id, self.neo4jdb)
         relations = contact1.get_outgoing_relations()
-        self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': 'IT-Manager'})
+        self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': role.name})
 
         # check role list
         role_list = models.RoleRelationship.get_all_roles(self.neo4jdb)
         self.assertEquals(role_list, [u'IT-Manager', u'Abuse Management'])
 
         # get contact with role
-        contact_list = models.RoleRelationship.get_contact_with_role(organization1.handle_id, 'IT-Manager', self.neo4jdb)
+        contact_list = models.RoleRelationship.get_contact_with_role(organization1.handle_id, role.name, self.neo4jdb)
         self.assertEquals(contact_list, {'handle_id': '115'})
 
         # remove free role in organization
-        models.RoleRelationship.remove_role_in_organization(organization1.handle_id, 'IT-Manager', self.neo4jdb)
+        models.RoleRelationship.remove_role_in_organization(organization1.handle_id, role.name, self.neo4jdb)
         relations = organization1.get_relations()
         self.assertEquals(relations, {})
 
