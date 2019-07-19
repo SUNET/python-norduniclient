@@ -1054,6 +1054,19 @@ class RoleRelationship(BaseRelationshipModel):
         core.query_to_dict(manager, q, contact_id=contact_id, organization_id=organization_id)
 
     @classmethod
+    def update_roles_withid(cls, role_handle_id, new_name, manager=None):
+        manager = cls.get_manager(manager)
+
+        q = """
+            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+            WHERE r.handle_id = {role_handle_id}
+            SET r.name = "{new_name}"
+            RETURN r
+            """.format(role_handle_id=role_handle_id, new_name=new_name)
+
+        core.query_to_dict(manager, q)
+
+    @classmethod
     def get_contact_with_role(cls, organization_id, role_name, manager=None):
         manager = cls.get_manager(manager)
 
