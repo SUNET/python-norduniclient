@@ -1082,6 +1082,35 @@ class RoleRelationship(BaseRelationshipModel):
             return ret['contact_handle_id']
 
     @classmethod
+    def get_role_relation_from_contact_organization(cls, organization_id, role_handle_id, contact_id, manager=None):
+        if isinstance(contact_id, six.string_types):
+            contact_id = "'{}'".format(contact_id)
+
+        if isinstance(organization_id, six.string_types):
+            organization_id = "'{}'".format(organization_id)
+
+        if isinstance(role_handle_id, six.string_types):
+            role_handle_id = "'{}'".format(role_handle_id)
+
+        manager = cls.get_manager(manager)
+
+        q = """
+            MATCH (c:Node:Contact {handle_id: {contact_id}})\
+            -[r:Works_for {handle_id: {role_handle_id}}]->\
+            (o:Node:Organization {handle_id: {organization_id}})
+            RETURN ID(r) as relation_id
+            """
+        ret = core.query_to_dict(manager, q, contact_id=contact_id, \
+                            role_handle_id=role_handle_id, \
+                            organization_id=organization_id)
+        
+        if ret:
+            relation_id = ret['relation_id']
+            relation = cls.get_relationship_model(manager, relationship_id=relation_id)
+
+            return relation
+
+    @classmethod
     def unlink_contact_organization(cls, contact_id, organization_id, manager=None):
         if isinstance(contact_id, six.string_types):
             contact_id = "'{}'".format(contact_id)
@@ -1097,6 +1126,29 @@ class RoleRelationship(BaseRelationshipModel):
             DELETE r RETURN c
             """
         core.query_to_dict(manager, q, contact_id=contact_id, organization_id=organization_id)
+
+    @classmethod
+    def unlink_contact_with_role_organization(cls, contact_id, organization_id, role_handle_id, manager=None):
+        if isinstance(contact_id, six.string_types):
+            contact_id = "'{}'".format(contact_id)
+
+        if isinstance(organization_id, six.string_types):
+            organization_id = "'{}'".format(organization_id)
+
+        if isinstance(role_handle_id, six.string_types):
+            role_handle_id = "'{}'".format(role_handle_id)
+
+        manager = cls.get_manager(manager)
+
+        q = """
+            MATCH (c:Node:Contact {handle_id: {contact_id}})\
+            -[r:Works_for {handle_id: {role_handle_id}}]->\
+            (o:Node:Organization {handle_id: {organization_id}})
+            DELETE r RETURN c
+            """
+        core.query_to_dict(manager, q, contact_id=contact_id, \
+                            role_handle_id=role_handle_id, \
+                            organization_id=organization_id)
 
     @classmethod
     def update_roles_withid(cls, role_handle_id, new_name, manager=None):
