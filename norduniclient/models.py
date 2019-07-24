@@ -1052,8 +1052,8 @@ class RoleRelationship(BaseRelationshipModel):
             MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
             WHERE r.handle_id = {role_handle_id} AND o.handle_id = {organization_id}
             RETURN ID(r) as relation_id
-            """
-        ret = core.query_to_dict(manager, q, role_handle_id=role_handle_id, organization_id=organization_id)
+            """.format(role_handle_id=role_handle_id, organization_id=organization_id)
+        ret = core.query_to_dict(manager, q)
 
         if ret:
             relation_id = ret['relation_id']
@@ -1075,8 +1075,8 @@ class RoleRelationship(BaseRelationshipModel):
             MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
             WHERE r.handle_id = {role_handle_id} AND o.handle_id = {organization_id}
             RETURN c.handle_id as contact_handle_id
-            """
-        ret = core.query_to_dict(manager, q, role_handle_id=role_handle_id, organization_id=organization_id)
+            """.format(role_handle_id=role_handle_id, organization_id=organization_id)
+        ret = core.query_to_dict(manager, q)
 
         if ret:
             return ret['contact_handle_id']
@@ -1095,37 +1095,20 @@ class RoleRelationship(BaseRelationshipModel):
         manager = cls.get_manager(manager)
 
         q = """
-            MATCH (c:Node:Contact {handle_id: {contact_id}})\
-            -[r:Works_for {handle_id: {role_handle_id}}]->\
-            (o:Node:Organization {handle_id: {organization_id}})
+            MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
+            WHERE c.handle_id = {contact_id}
+            AND r.handle_id = {role_handle_id}
+            AND o.handle_id = {organization_id}
             RETURN ID(r) as relation_id
-            """
-        ret = core.query_to_dict(manager, q, contact_id=contact_id, \
-                            role_handle_id=role_handle_id, \
+            """.format(contact_id=contact_id,role_handle_id=role_handle_id,
                             organization_id=organization_id)
-        
+        ret = core.query_to_dict(manager, q)
+
         if ret:
             relation_id = ret['relation_id']
             relation = cls.get_relationship_model(manager, relationship_id=relation_id)
 
             return relation
-
-    @classmethod
-    def unlink_contact_organization(cls, contact_id, organization_id, manager=None):
-        if isinstance(contact_id, six.string_types):
-            contact_id = "'{}'".format(contact_id)
-
-        if isinstance(organization_id, six.string_types):
-            organization_id = "'{}'".format(organization_id)
-
-        manager = cls.get_manager(manager)
-
-        q = """
-            MATCH (c:Node:Contact)-[r:Works_for]->(o:Node:Organization)
-            WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
-            DELETE r RETURN c
-            """
-        core.query_to_dict(manager, q, contact_id=contact_id, organization_id=organization_id)
 
     @classmethod
     def unlink_contact_with_role_organization(cls, contact_id, organization_id, role_handle_id, manager=None):
@@ -1140,15 +1123,15 @@ class RoleRelationship(BaseRelationshipModel):
 
         manager = cls.get_manager(manager)
 
-        q = """
-            MATCH (c:Node:Contact {handle_id: {contact_id}})\
-            -[r:Works_for {handle_id: {role_handle_id}}]->\
-            (o:Node:Organization {handle_id: {organization_id}})
+        q = '''
+            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+            WHERE c.handle_id = {contact_id}
+            AND r.handle_id = {role_handle_id}
+            AND o.handle_id = {organization_id}
             DELETE r RETURN c
-            """
-        core.query_to_dict(manager, q, contact_id=contact_id, \
-                            role_handle_id=role_handle_id, \
-                            organization_id=organization_id)
+            '''.format(contact_id=contact_id, role_handle_id=role_handle_id, \
+                                organization_id=organization_id)
+        ret = core.query_to_dict(manager, q)
 
     @classmethod
     def update_roles_withid(cls, role_handle_id, new_name, manager=None):
@@ -1174,28 +1157,6 @@ class RoleRelationship(BaseRelationshipModel):
             """.format(role_handle_id=role_handle_id)
 
         core.query_to_dict(manager, q)
-
-    @classmethod
-    def get_contact_with_role(cls, organization_id, role_name, manager=None):
-        manager = cls.get_manager(manager)
-
-        q = """
-            MATCH (o:Organization {handle_id: {organization_id}})<-[:Works_for {name: {role_name}}]-(c:Contact)
-            RETURN c.handle_id AS handle_id
-            """
-
-        return core.query_to_dict(manager, q, organization_id=organization_id, role_name=role_name)
-
-    @classmethod
-    def remove_role_in_organization(cls, organization_id, role_name, manager=None):
-        manager = cls.get_manager(manager)
-
-        q = """
-            MATCH (o:Organization {handle_id: {organization_id}})<-[r:Works_for {name: {role_name}}]-(c:Contact)
-            DELETE r RETURN o
-            """
-
-        return core.query_to_dict(manager, q, organization_id=organization_id, role_name=role_name)
 
     def load_from_nodes(self, contact_id, organization_id):
         if isinstance(contact_id, six.string_types):
@@ -1231,7 +1192,7 @@ class RoleRelationship(BaseRelationshipModel):
         return cls(manager).load(bundle)
 
     @classmethod
-    def get_all_roles(cls, manager=None):
+    def get_all_role_names(cls, manager=None):
         manager = cls.get_manager(manager)
 
         q = """MATCH (n:Contact)-[r:Works_for]->(m:Organization)
@@ -1244,34 +1205,6 @@ class RoleRelationship(BaseRelationshipModel):
             endresult.append(r['role_name'])
 
         return endresult
-
-    @classmethod
-    def get_contacts_with_role_name(cls, role_name, manager=None):
-        manager = cls.get_manager(manager)
-
-        q = """
-            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
-            WHERE r.name = {role_name}
-            RETURN c, o
-            """
-
-        result = core.query_to_list(manager, q, role_name=role_name)
-        contact_list = []
-
-        for node in result:
-            contact = ContactModel(manager)
-            contact.data = {}
-            contact.data['handle_id'] = node['c'].properties['handle_id']
-            contact.reload(node['c'])
-
-            organization = OrganizationModel(manager)
-            organization.data = {}
-            organization.data['handle_id'] = node['o'].properties['handle_id']
-            organization.reload(node['o'])
-
-            contact_list.append((contact, organization))
-
-        return contact_list
 
     @classmethod
     def get_contacts_with_role_id(cls, handle_id, manager=None):

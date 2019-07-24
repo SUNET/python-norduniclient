@@ -141,6 +141,11 @@ class ModelsTests(Neo4jTestCase):
             (physical2)<-[:Connected_to]-(physical4)-[:Connected_to]->(physical3)
             """
 
+        self.role_name_1 = u'IT-Manager'
+        self.role_name_2 = u'Abuse Management'
+        self.role_handle_id_1 = 122
+        self.role_handle_id_2 = 123
+
         q3 = """
             // Create organization and contact nodes
             CREATE (organization1:Node:Relation:Organization{name:'Organization1', handle_id:'113'}),
@@ -153,8 +158,8 @@ class ModelsTests(Neo4jTestCase):
 
 
             // Create relationships
-            (contact1)-[:Works_for {name: 'IT-Manager'}]->(organization1),
-            (contact2)-[:Works_for {name: 'Abuse Management'}]->(organization2),
+            (contact1)-[:Works_for {name: 'IT-Manager', handle_id: 122 }]->(organization1),
+            (contact2)-[:Works_for {name: 'Abuse Management', handle_id: 123 }]->(organization2),
             (organization1)-[:Uses_a]->(procedure1)
             """
 
@@ -577,36 +582,59 @@ class ModelsTests(Neo4jTestCase):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
         relations = contact1.get_outgoing_relations()
         self.assertIsInstance(relations['Works_for'][0]['node'], models.OrganizationModel)
-        self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': 'IT-Manager'})
+
+        expected_value = { 'name': self.role_name_1, 'handle_id': self.role_handle_id_1}
+        self.assertEquals(relations['Works_for'][0]['relationship'], expected_value)
 
     def test_contact_role_org(self):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
-        role_name = 'IT-Manager'
-        role = Role.objects.get_or_create(name = role_name)[0]
 
         # unlink
-        models.RoleRelationship.unlink_contact_organization(contact1.handle_id, organization1.handle_id, self.neo4jdb)
+        models.RoleRelationship.unlink_contact_with_role_organization(contact1.handle_id,
+            organization1.handle_id, self.role_handle_id_1, self.neo4jdb)
+
         relations = contact1.get_outgoing_relations()
-        self.assertIsNotNone(relations)
+        self.assertEquals(relations, {})
 
         # relink
-        models.RoleRelationship.link_contact_organization(contact1.handle_id, organization1.handle_id, role.name, role.handle_id, self.neo4jdb)
+        models.RoleRelationship.link_contact_organization(contact1.handle_id,
+            organization1.handle_id, self.role_handle_id_1, self.role_name_1, self.neo4jdb)
         relations = contact1.get_outgoing_relations()
-        self.assertEquals(relations['Works_for'][0]['relationship'], { 'name': role.name})
+        expected_value = { 'name': self.role_name_1, 'handle_id': self.role_handle_id_1}
+        self.assertEquals(relations['Works_for'][0]['relationship'], expected_value)
+
+        # get contact which holds this role in this organization
+        contact_handle_id = models.RoleRelationship.get_contact_with_role_in_organization(
+            organization1.handle_id, self.role_handle_id_1, self.neo4jdb)
+        self.assertEqual(contact_handle_id, contact1.handle_id)
+
+        # get the relation of a organization with a specific role
+        relation = models.RoleRelationship.get_role_relation_from_organization(
+            organization1.handle_id, self.role_handle_id_1, self.neo4jdb)
+        self.assertEqual(relations['Works_for'][0]['relationship_id'], relation.id)
+
+        # get the relation between contact and organization with a specific role
+        relation = models.RoleRelationship.get_role_relation_from_contact_organization(
+            organization1.handle_id, self.role_handle_id_1, contact1.handle_id, self.neo4jdb)
+        self.assertEqual(relations['Works_for'][0]['relationship_id'], relation.id)
 
         # check role list
-        role_list = models.RoleRelationship.get_all_roles(self.neo4jdb)
-        self.assertEquals(role_list, [u'IT-Manager', u'Abuse Management'])
+        role_list = models.RoleRelationship.get_all_role_names(self.neo4jdb)
+        self.assertEquals(role_list, [self.role_name_1, self.role_name_2])
 
-        # get contact with role
-        contact_list = models.RoleRelationship.get_contact_with_role(organization1.handle_id, role.name, self.neo4jdb)
-        self.assertEquals(contact_list, {'handle_id': '115'})
+        # role name change
+        new_role_name = u"Abuse Manager"
+        models.RoleRelationship.update_roles_withid(self.role_handle_id_2,
+            new_role_name, self.neo4jdb)
+        role_list = models.RoleRelationship.get_all_role_names(self.neo4jdb)
+        self.assertEquals(role_list, [self.role_name_1, new_role_name])
 
-        # remove free role in organization
-        models.RoleRelationship.remove_role_in_organization(organization1.handle_id, role.name, self.neo4jdb)
-        relations = organization1.get_relations()
-        self.assertEquals(relations, {})
+        # delete role
+        models.RoleRelationship.delete_roles_withid(self.role_handle_id_2,
+            self.neo4jdb)
+        role_list = models.RoleRelationship.get_all_role_names(self.neo4jdb)
+        self.assertEquals(role_list, [self.role_name_1])
 
     def test_uses_a_procedure(self):
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
