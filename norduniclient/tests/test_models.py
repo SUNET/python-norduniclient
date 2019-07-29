@@ -606,8 +606,8 @@ class ModelsTests(Neo4jTestCase):
         relations = contact1.get_outgoing_relations()
         self.assertIsInstance(relations['Works_for'][0]['node'], models.OrganizationModel)
 
-        expected_value = { 'name': self.role_name_1 }
-        self.assertEquals(relations['Works_for'][0]['relationship'], expected_value)
+        expected_value = self.role_name_1
+        self.assertEquals(relations['Works_for'][0]['relationship']['name'], expected_value)
 
     def test_contact_role_org(self):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
@@ -624,8 +624,8 @@ class ModelsTests(Neo4jTestCase):
         models.RoleRelationship.link_contact_organization(contact1.handle_id,
             organization1.handle_id, self.role_name_1, self.neo4jdb)
         relations = contact1.get_outgoing_relations()
-        expected_value = { 'name': self.role_name_1 }
-        self.assertEquals(relations['Works_for'][0]['relationship'], expected_value)
+        expected_value = self.role_name_1
+        self.assertEquals(relations['Works_for'][0]['relationship']['name'], expected_value)
 
         # get contact which holds this role in this organization
         contact_handle_id = models.RoleRelationship.get_contact_with_role_in_organization(
