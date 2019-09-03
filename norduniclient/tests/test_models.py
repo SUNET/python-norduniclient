@@ -646,6 +646,12 @@ class ModelsTests(Neo4jTestCase):
         role_list = models.RoleRelationship.get_all_role_names(self.neo4jdb)
         self.assertEquals(role_list, [self.role_name_1, self.role_name_2])
 
+        # check specific role list
+        role_list = models.RoleRelationship.get_contacts_with_role_name('IT-Manager', self.neo4jdb)
+        self.assertEquals(len(role_list), 1)
+        self.assertEquals(role_list[0][0].handle_id, contact1.handle_id)
+        self.assertEquals(role_list[0][1].handle_id, organization1.handle_id)
+
         # role name change
         new_role_name = u"Abuse Manager"
         models.RoleRelationship.update_roles_withname(self.role_name_2,

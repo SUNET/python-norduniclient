@@ -1212,18 +1212,19 @@ class RoleRelationship(BaseRelationshipModel):
 
         for node in result:
             contact = ContactModel(manager)
-            contact.data = {}
-            contact.data['handle_id'] = node['c'].properties['handle_id']
+            contact.data = dict()
+            contact.data['handle_id'] = node['c']['handle_id']
             contact.reload(node['c'])
 
             organization = OrganizationModel(manager)
-            organization.data = {}
-            organization.data['handle_id'] = node['o'].properties['handle_id']
+            organization.data = dict()
+            organization.data['handle_id'] = node['o']['handle_id']
             organization.reload(node['o'])
 
             contact_list.append((contact, organization))
 
         return contact_list
+
 
 class ProcedureModel(LogicalModel):
     pass
