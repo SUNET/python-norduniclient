@@ -157,11 +157,19 @@ class ModelsTests(Neo4jTestCase):
             (procedure2:Node:Logical:Procedure{name:'Procedure2', handle_id:'120'}),
             (group1:Node:Logical:Group{name:'Group1', handle_id:'121'}),
 
+            (phone1:Node:Logical:Phone{type:'Work', handle_id:'122', value: '029928493'}),
+            (phone2:Node:Logical:Phone{type:'Day time only', handle_id:'123', value: '697543357'}),
+            (email1:Node:Logical:Email{type:'Work', handle_id:'124', value: 'ssvensson@sunet.se'}),
+            (email2:Node:Logical:Email{type:'Personal', handle_id:'125', value: 'ssvensson-per@sunet.se'}),
 
             // Create relationships
             (contact1)-[:Works_for {name: 'IT-Manager' }]->(organization1),
             (contact2)-[:Works_for {name: 'Abuse Management' }]->(organization2),
-            (organization1)-[:Uses_a]->(procedure1)
+            (organization1)-[:Uses_a]->(procedure1),
+            (contact1)-[:Has_phone]->(phone1),
+            (contact2)-[:Has_phone]->(phone2),
+            (contact1)-[:Has_email]->(email1),
+            (contact2)-[:Has_email]->(email2)
             """
 
         # Insert mocked network
