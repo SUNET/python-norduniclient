@@ -988,7 +988,7 @@ class ContactModel(RelationModel):
 
     def get_outgoing_relations(self):
         q = """
-            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of]->(node)
+            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of|Has_phone|Has_email]->(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
