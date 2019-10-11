@@ -157,11 +157,23 @@ class ModelsTests(Neo4jTestCase):
             (procedure2:Node:Logical:Procedure{name:'Procedure2', handle_id:'120'}),
             (group1:Node:Logical:Group{name:'Group1', handle_id:'121'}),
 
+            (phone1:Node:Logical:Phone{type:'Work', handle_id:'122', name: '029928493'}),
+            (phone2:Node:Logical:Phone{type:'Personal', handle_id:'123', name: '697543357'}),
+            (email1:Node:Logical:Email{type:'Work', handle_id:'124', name: 'ssvensson@sunet.se'}),
+            (email2:Node:Logical:Email{type:'Personal', handle_id:'125', name: 'ssvensson-per@sunet.se'}),
+
+            (address1:Node:Logical:Address{handle_id:'126', website:'www.sunet.se', street: 'Tulegatan 11', postal_code: '202100', postal_area: 'Stockholm', phone: '779-140-6431'}),
+            (address2:Node:Logical:Address{handle_id:'127', website:'www.emergya.com', street: 'Calle Luis de Morales, 32, 5º, Puerta 5', postal_code: '41018', postal_area: 'Seville', phone: '779-140-6431'}),
 
             // Create relationships
             (contact1)-[:Works_for {name: 'IT-Manager' }]->(organization1),
             (contact2)-[:Works_for {name: 'Abuse Management' }]->(organization2),
-            (organization1)-[:Uses_a]->(procedure1)
+            (organization1)-[:Uses_a]->(procedure1),
+            (organization1)-[:Has_address]->(address1),
+            (contact1)-[:Has_phone]->(phone1),
+            (contact2)-[:Has_phone]->(phone2),
+            (contact1)-[:Has_email]->(email1),
+            (contact2)-[:Has_email]->(email2)
             """
 
         # Insert mocked network
@@ -618,7 +630,7 @@ class ModelsTests(Neo4jTestCase):
             organization1.handle_id, self.role_name_1, self.neo4jdb)
 
         relations = contact1.get_outgoing_relations()
-        self.assertEquals(relations, {})
+        self.assertFalse('Works_for' in relations)
 
         # relink
         models.RoleRelationship.link_contact_organization(contact1.handle_id,
@@ -891,3 +903,11 @@ class ModelsTests(Neo4jTestCase):
         customers = service2.get_customers()
         self.assertEqual(len(customers['customers']), 1)
         self.assertIsInstance(customers['customers'][0]['node'], models.CustomerModel)
+
+    def test_add_address(self):
+        organization2 = core.get_node_model(self.neo4jdb, handle_id='114')
+        address2 = core.get_node_model(self.neo4jdb, handle_id='127')
+
+        organization2.add_address('127')
+        outgoing_relations = organization2.get_outgoing_relations()
+        self.assertIsInstance(outgoing_relations['Has_address'][0]['node'], models.AddressModel)

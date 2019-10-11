@@ -943,7 +943,7 @@ class OrganizationModel(RelationModel):
 
     def get_outgoing_relations(self):
         q = """
-            MATCH (n:Node:Organization {handle_id: {handle_id}})-[r:Parent|Uses_a]->(node)
+            MATCH (n:Node:Organization {handle_id: {handle_id}})-[r:Parent|Uses_a|Has_address]->(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -955,6 +955,14 @@ class OrganizationModel(RelationModel):
             RETURN DISTINCT c.handle_id as handle_id, c.name as name
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
+    def add_address(self, address_handle_id):
+        q = """
+            MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Address {handle_id: {address_handle_id}})
+            MERGE (n)-[r:Has_address]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, address_handle_id=address_handle_id)
 
 
 class ProviderModel(RelationModel):
@@ -970,9 +978,25 @@ class ContactModel(RelationModel):
             """
         return self._basic_write_query_to_dict(q, group_handle_id=group_handle_id)
 
+    def add_phone(self, phone_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Phone {handle_id: {phone_handle_id}})
+            MERGE (n)-[r:Has_phone]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, phone_handle_id=phone_handle_id)
+
+    def add_email(self, email_handle_id):
+        q = """
+            MATCH (n:Node:Contact {handle_id: {handle_id}}), (m:Node:Email {handle_id: {email_handle_id}})
+            MERGE (n)-[r:Has_email]->(m)
+            RETURN m as created, r, n as node
+            """
+        return self._basic_write_query_to_dict(q, email_handle_id=email_handle_id)
+
     def get_outgoing_relations(self):
         q = """
-            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of]->(node)
+            MATCH (n:Node:Contact {handle_id: {handle_id}})-[r:Works_for|Member_of|Has_phone|Has_email]->(node)
             RETURN r, node
             """
         return self._basic_read_query_to_dict(q)
@@ -1227,4 +1251,16 @@ class RoleRelationship(BaseRelationshipModel):
 
 
 class ProcedureModel(LogicalModel):
+    pass
+
+
+class EmailModel(LogicalModel):
+    pass
+
+
+class PhoneModel(LogicalModel):
+    pass
+
+
+class AddressModel(LogicalModel):
     pass
