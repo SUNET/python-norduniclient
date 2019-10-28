@@ -1188,8 +1188,9 @@ class RoleRelationship(BaseRelationshipModel):
 
         ret = core.query_to_dict(self.manager, q)
 
-        bundle = core.get_relationship_bundle(self.manager, ret['relation_id'])
-        self.load(bundle)
+        if 'relation_id' in ret:
+            bundle = core.get_relationship_bundle(self.manager, ret['relation_id'])
+            self.load(bundle)
 
     @classmethod
     def get_relationship_model(cls, manager, relationship_id):
