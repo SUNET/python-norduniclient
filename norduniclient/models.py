@@ -965,15 +965,24 @@ class OrganizationModel(RelationModel):
         return self._basic_write_query_to_dict(q, address_handle_id=address_handle_id)
 
     @classmethod
-    def check_existent_organization_id(cls, organization_id, manager=None):
+    def check_existent_organization_id(cls, organization_id, handle_id=None, manager=None):
         if not manager:
             manager = core.GraphDB.get_instance().manager
+
+        handle_query = ''
+        if handle_id:
+            # string format
+            if isinstance(handle_id, six.string_types):
+                handle_id = "'{}'".format(handle_id)
+            
+            handle_query = 'AND n.handle_id <> {}'.format(handle_id)
 
         q = """
         MATCH (n:Node:Organization)
         WHERE n.organization_id="{organization_id}"
+        {handle_query}
         RETURN count(n) > 0 AS exists
-        """.format(organization_id=organization_id)
+        """.format(organization_id=organization_id, handle_query=handle_query)
 
         res = core.query_to_dict(manager, q)
 
