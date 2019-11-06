@@ -149,8 +149,8 @@ class ModelsTests(Neo4jTestCase):
 
         q3 = """
             // Create organization and contact nodes
-            CREATE (organization1:Node:Relation:Organization{name:'Organization1', handle_id:'113'}),
-            (organization2:Node:Relation:Organization{name:'Organization2', handle_id:'114'}),
+            CREATE (organization1:Node:Relation:Organization{name:'Organization1', handle_id:'113', organization_id:'ORG1'}),
+            (organization2:Node:Relation:Organization{name:'Organization2', handle_id:'114', organization_id:'ORG2'}),
             (contact1:Node:Relation:Contact{name:'Contact1', handle_id:'115'}),
             (contact2:Node:Relation:Contact{name:'Contact2', handle_id:'116'}),
             (procedure1:Node:Logical:Procedure{name:'Procedure1', handle_id:'119'}),
@@ -911,3 +911,15 @@ class ModelsTests(Neo4jTestCase):
         organization2.add_address('127')
         outgoing_relations = organization2.get_outgoing_relations()
         self.assertIsInstance(outgoing_relations['Has_address'][0]['node'], models.AddressModel)
+
+    def test_check_organization_id(self):
+        existent_orgid = 'ORG1'
+        nonexistent_orgid = 'ORG3'
+        expected_true = models.OrganizationModel.check_existent_organization_id(existent_orgid, None, self.neo4jdb)
+        expected_false = models.OrganizationModel.check_existent_organization_id(nonexistent_orgid, None, self.neo4jdb)
+
+        self.assertTrue(expected_true)
+        self.assertFalse(expected_false)
+
+        expected_false = models.OrganizationModel.check_existent_organization_id(existent_orgid, '113', self.neo4jdb)
+        self.assertFalse(expected_false)
