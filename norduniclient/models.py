@@ -965,7 +965,7 @@ class OrganizationModel(RelationModel):
         return self._basic_write_query_to_dict(q, address_handle_id=address_handle_id)
 
     @classmethod
-    def check_existent_organization_id(cls, organization_id, manager):
+    def check_existent_organization_id(cls, organization_id, manager=None):
         if not manager:
             manager = core.GraphDB.get_instance().manager
 
