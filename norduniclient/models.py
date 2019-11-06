@@ -964,6 +964,21 @@ class OrganizationModel(RelationModel):
             """
         return self._basic_write_query_to_dict(q, address_handle_id=address_handle_id)
 
+    @classmethod
+    def check_existent_organization_id(cls, organization_id, manager):
+        if not manager:
+            manager = core.GraphDB.get_instance().manager
+
+        q = """
+        MATCH (n:Node:Organization)
+        WHERE n.organization_id="{organization_id}"
+        RETURN count(n) > 0 AS exists
+        """.format(organization_id=organization_id)
+
+        res = core.query_to_dict(manager, q)
+
+        return res['exists']
+
 
 class ProviderModel(RelationModel):
     pass
