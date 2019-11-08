@@ -971,10 +971,6 @@ class OrganizationModel(RelationModel):
 
         handle_query = ''
         if handle_id:
-            # string format
-            if isinstance(handle_id, six.string_types):
-                handle_id = "'{}'".format(handle_id)
-            
             handle_query = 'AND n.handle_id <> {}'.format(handle_id)
 
         q = """
