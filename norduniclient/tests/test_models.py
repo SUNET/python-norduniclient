@@ -920,6 +920,3 @@ class ModelsTests(Neo4jTestCase):
 
         self.assertTrue(expected_true)
         self.assertFalse(expected_false)
-
-        expected_false = models.OrganizationModel.check_existent_organization_id(existent_orgid, '113', self.neo4jdb)
-        self.assertFalse(expected_false)
