@@ -639,6 +639,26 @@ class ModelsTests(Neo4jTestCase):
         expected_value = self.role_name_1
         self.assertEquals(relations['Works_for'][0]['relationship']['name'], expected_value)
 
+        # update single role relationship (change name)
+        relationship_id = relations['Works_for'][0]['relationship']._id
+        new_rolename = "Changed role"
+        models.RoleRelationship.update_contact_organization(contact1.handle_id,
+            organization1.handle_id, new_rolename, relationship_id, self.neo4jdb)
+
+        relations = contact1.get_outgoing_relations()
+        expected_value = self.role_name_1
+        self.assertEquals(relations['Works_for'][0]['relationship']['name'], new_rolename)
+        self.assertEquals(relations['Works_for'][0]['relationship']._id, relationship_id)
+
+        # change name again
+        models.RoleRelationship.update_contact_organization(contact1.handle_id,
+            organization1.handle_id, self.role_name_1, relationship_id, self.neo4jdb)
+
+        relations = contact1.get_outgoing_relations()
+        expected_value = self.role_name_1
+        self.assertEquals(relations['Works_for'][0]['relationship']['name'], self.role_name_1)
+        self.assertEquals(relations['Works_for'][0]['relationship']._id, relationship_id)
+
         # get contact which holds this role in this organization
         contact_handle_id = models.RoleRelationship.get_contact_with_role_in_organization(
             organization1.handle_id, self.role_name_1, self.neo4jdb)
