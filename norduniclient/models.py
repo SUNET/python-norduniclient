@@ -1086,6 +1086,37 @@ class RoleRelationship(BaseRelationshipModel):
             return relation
 
     @classmethod
+    def update_contact_organization(cls, contact_id, organization_id, role_name, relationship_id, manager=None):
+        if isinstance(contact_id, six.string_types):
+            contact_id = "'{}'".format(contact_id)
+
+        if isinstance(organization_id, six.string_types):
+            organization_id = "'{}'".format(organization_id)
+
+        if not role_name:
+            role_name = cls.DEFAULT_ROLE_NAME
+
+        # create relation
+        manager = cls.get_manager(manager)
+
+        q = """
+            MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+            WHERE c.handle_id = {contact_id} AND o.handle_id = {organization_id}
+            AND ID(r) = {relationship_id}
+            SET r.name = "{role_name}"
+            RETURN ID(r) as relation_id
+            """.format(contact_id=contact_id, organization_id=organization_id, \
+                        relationship_id=relationship_id, role_name=role_name)
+        ret = core.query_to_dict(manager, q)
+
+        # load and return
+        if ret:
+            relation_id = ret['relation_id']
+            relation = cls.get_relationship_model(manager, relationship_id=relation_id)
+
+            return relation
+
+    @classmethod
     def get_role_relation_from_organization(cls, organization_id, role_name, manager=None):
         if isinstance(organization_id, six.string_types):
             organization_id = "'{}'".format(organization_id)
