@@ -3,7 +3,7 @@ builders:
 triggers:
   cron: "@weekly"
 environment_variables:
-  NEO4J_VERSION: "latest"
+  NEO4J_VERSION: "3.5"
 pre_build_script:
   - "docker pull neo4j:${NEO4J_VERSION}"
 script:
