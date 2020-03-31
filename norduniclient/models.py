@@ -1316,3 +1316,11 @@ class PhoneModel(LogicalModel):
 
 class AddressModel(LogicalModel):
     pass
+
+
+class PatchPanelModel(EquipmentModel):
+    pass
+
+
+class OutletModel(EquipmentModel):
+    pass
