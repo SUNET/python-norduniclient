@@ -151,6 +151,7 @@ class ModelsTests(Neo4jTestCase):
             // Create organization and contact nodes
             CREATE (organization1:Node:Relation:Organization{name:'Organization1', handle_id:'113', organization_id:'ORG1'}),
             (organization2:Node:Relation:Organization{name:'Organization2', handle_id:'114', organization_id:'ORG2'}),
+            (organization3:Node:Relation:Organization{name:'Organization3', handle_id:'128', organization_id:'ORG3'}),
             (contact1:Node:Relation:Contact{name:'Contact1', handle_id:'115'}),
             (contact2:Node:Relation:Contact{name:'Contact2', handle_id:'116'}),
             (procedure1:Node:Logical:Procedure{name:'Procedure1', handle_id:'119'}),
@@ -607,11 +608,39 @@ class ModelsTests(Neo4jTestCase):
         self.assertEqual(len(relations['Responsible_for']), 1)
 
     def test_set_parent(self):
+        # add several parent orgs
         organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
         organization2 = core.get_node_model(self.neo4jdb, handle_id='114')
+        organization3 = core.get_node_model(self.neo4jdb, handle_id='128')
+
         organization2.set_parent(organization1.handle_id)
+        organization2.set_parent(organization3.handle_id)
+
         relations = organization2.get_relations()
-        self.assertIsInstance(relations['Parent_of'][0]['node'], models.OrganizationModel)
+        parent1_org = relations['Parent_of'][0]['node']
+        parent2_org = relations['Parent_of'][1]['node']
+
+        self.assertIsInstance(parent1_org, models.OrganizationModel)
+        self.assertIsInstance(parent2_org, models.OrganizationModel)
+
+        self.assertEqual(organization1.handle_id, parent1_org.handle_id)
+        self.assertEqual(organization3.handle_id, parent2_org.handle_id)
+
+    def test_set_parent_unique(self):
+        # add several parent orgs
+        organization1 = core.get_node_model(self.neo4jdb, handle_id='113')
+        organization2 = core.get_node_model(self.neo4jdb, handle_id='114')
+        organization3 = core.get_node_model(self.neo4jdb, handle_id='128')
+
+        organization2.set_parent(organization1.handle_id, overwrite=True)
+        organization2.set_parent(organization3.handle_id, overwrite=True)
+
+        relations = organization2.get_relations()
+        parent1_org = relations['Parent_of'][0]['node']
+
+        self.assertIsInstance(parent1_org, models.OrganizationModel)
+        self.assertEqual(organization3.handle_id, parent1_org.handle_id)
+        self.assertEqual(len(relations['Parent_of']), 1)
 
     def test_get_outgoing_relations(self):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
@@ -619,7 +648,7 @@ class ModelsTests(Neo4jTestCase):
         self.assertIsInstance(relations['Works_for'][0]['node'], models.OrganizationModel)
 
         expected_value = self.role_name_1
-        self.assertEquals(relations['Works_for'][0]['relationship']['name'], expected_value)
+        self.assertEqual(relations['Works_for'][0]['relationship']['name'], expected_value)
 
     def test_contact_role_org(self):
         contact1 = core.get_node_model(self.neo4jdb, handle_id='115')
