@@ -917,12 +917,22 @@ class CustomerModel(RelationModel):
     pass
 
 class OrganizationModel(RelationModel):
-    def set_parent(self, org_handle_id):
+    def set_parent(self, org_handle_id, overwrite=False):
         q = """
             MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
             MERGE (m)-[r:Parent_of]->(n)
             RETURN m as created, r, n as node
             """
+
+        if overwrite:
+            q = """
+                MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
+                OPTIONAL MATCH (n)<-[s:Parent_of]-(x:Node:Organization)
+                MERGE (m)-[r:Parent_of]->(n)
+                DELETE s
+                RETURN m as created, r, n as node
+                """
+
         return self._basic_write_query_to_dict(q, org_handle_id=org_handle_id)
 
     def set_child(self, org_handle_id):
