@@ -963,7 +963,7 @@ class ModelsTests(Neo4jTestCase):
 
     def test_check_organization_id(self):
         existent_orgid = 'ORG1'
-        nonexistent_orgid = 'ORG3'
+        nonexistent_orgid = 'ORG0'
         expected_true = models.OrganizationModel.check_existent_organization_id(existent_orgid, None, self.neo4jdb)
         expected_false = models.OrganizationModel.check_existent_organization_id(nonexistent_orgid, None, self.neo4jdb)
 
