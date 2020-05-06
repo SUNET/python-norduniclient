@@ -623,8 +623,8 @@ class ModelsTests(Neo4jTestCase):
         self.assertIsInstance(parent1_org, models.OrganizationModel)
         self.assertIsInstance(parent2_org, models.OrganizationModel)
 
-        self.assertEqual(organization1.handle_id, parent1_org.handle_id)
-        self.assertEqual(organization3.handle_id, parent2_org.handle_id)
+        self.assertEqual(organization3.handle_id, parent1_org.handle_id)
+        self.assertEqual(organization1.handle_id, parent2_org.handle_id)
 
     def test_set_parent_unique(self):
         # add several parent orgs
