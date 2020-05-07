@@ -928,6 +928,7 @@ class OrganizationModel(RelationModel):
             q = """
                 MATCH (n:Node:Organization {handle_id: {handle_id}}), (m:Node:Organization {handle_id: {org_handle_id}})
                 OPTIONAL MATCH (n)<-[s:Parent_of]-(x:Node:Organization)
+                WHERE x.handle_id <> m.handle_id
                 MERGE (m)-[r:Parent_of]->(n)
                 DELETE s
                 RETURN m as created, r, n as node
