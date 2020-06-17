@@ -1041,6 +1041,44 @@ class GroupModel(LogicalModel):
             """
         return self._basic_write_query_to_dict(q, contact_handle_id=contact_handle_id)
 
+    def set_supports(self, ph_handle_id):
+        q = """
+            MATCH (n:Node:Group {handle_id: {handle_id}}), (m:Node:Physical {handle_id: {ph_handle_id}})
+            OPTIONAL MATCH (x:Node:Group)-[s:Supports]->(m)
+            WHERE x.handle_id <> n.handle_id
+            MERGE (n)-[r:Supports]->(m)
+            DELETE s
+            RETURN m as created, r, n as node
+            """
+
+        return self._basic_write_query_to_dict(q, ph_handle_id=ph_handle_id)
+
+    def get_supports(self):
+        q = """
+            MATCH (n:Node:Group {handle_id: {handle_id}})-[r:Supports]->(m:Node:Physical)
+            RETURN n, r, m as node
+            """
+        return self._basic_read_query_to_dict(q)
+
+    def set_takes_responsibility(self, ph_handle_id):
+        q = """
+            MATCH (n:Node:Group {handle_id: {handle_id}}), (m:Node:Physical {handle_id: {ph_handle_id}})
+            OPTIONAL MATCH (x:Node:Group)-[s:Takes_responsibility]->(m)
+            WHERE x.handle_id <> n.handle_id
+            MERGE (n)-[r:Takes_responsibility]->(m)
+            DELETE s
+            RETURN m as created, r, n as node
+            """
+
+        return self._basic_write_query_to_dict(q, ph_handle_id=ph_handle_id)
+
+    def get_takes_responsibility(self):
+        q = """
+            MATCH (n:Node:Group {handle_id: {handle_id}})-[r:Takes_responsibility]->(m:Node:Physical)
+            RETURN n, r, m as node
+            """
+        return self._basic_read_query_to_dict(q)
+
 
 class RoleRelationship(BaseRelationshipModel):
     RELATION_NAME = 'Works_for'

@@ -157,6 +157,7 @@ class ModelsTests(Neo4jTestCase):
             (procedure1:Node:Logical:Procedure{name:'Procedure1', handle_id:'119'}),
             (procedure2:Node:Logical:Procedure{name:'Procedure2', handle_id:'120'}),
             (group1:Node:Logical:Group{name:'Group1', handle_id:'121'}),
+            (group2:Node:Logical:Group{name:'Group2', handle_id:'129'}),
 
             (phone1:Node:Logical:Phone{type:'Work', handle_id:'122', name: '029928493'}),
             (phone2:Node:Logical:Phone{type:'Personal', handle_id:'123', name: '697543357'}),
@@ -969,3 +970,121 @@ class ModelsTests(Neo4jTestCase):
 
         self.assertTrue(expected_true)
         self.assertFalse(expected_false)
+
+    def check_group_physical(self, relation_name, get_method, link_method):
+        # a group can support multiple physical
+        # but a physical will have only one support group
+
+        group1_id = '121'
+        group2_id = '129'
+
+        group1 = core.get_node_model(self.neo4jdb, handle_id=group1_id)
+        group2 = core.get_node_model(self.neo4jdb, handle_id=group2_id)
+
+        get_method_1 = getattr(group1, get_method)
+        get_method_2 = getattr(group2, get_method)
+
+        link_method_1 = getattr(group1, link_method)
+        link_method_2 = getattr(group2, link_method)
+
+        physical1_id = '101'
+        physical2_id = '102'
+
+        physical1 = core.get_node_model(self.neo4jdb, handle_id=physical1_id)
+        physical2 = core.get_node_model(self.neo4jdb, handle_id=physical2_id)
+
+        # check relations in both nodes
+        self.assertFalse(relation_name in physical1.incoming)
+        self.assertFalse(relation_name in physical2.incoming)
+
+        self.assertFalse(relation_name in group1.outgoing)
+        self.assertFalse(relation_name in group2.outgoing)
+
+        # check get method
+        ret_method1 = get_method_1()
+        ret_method2 = get_method_2()
+
+        self.assertTrue(len(ret_method1) == 0)
+        self.assertTrue(len(ret_method2) == 0)
+
+        # link group1 to physical1
+        link_method_1(physical1.handle_id)
+
+        # check is linked
+        self.assertTrue(relation_name in group1.outgoing)
+        self.assertTrue(relation_name in physical1.incoming)
+
+        relationship = group1.outgoing[relation_name][0]['relationship']
+        test_enode = relationship.end_node
+        test_ehandle_id = test_enode._properties['handle_id']
+        self.assertEqual(test_ehandle_id, physical1_id)
+
+        relationship = physical1.incoming[relation_name][0]['relationship']
+        test_snode = relationship.start_node
+        test_shandle_id = test_snode._properties['handle_id']
+        self.assertEqual(test_shandle_id, group1_id)
+
+        # check method result
+        ret_method1 = get_method_1()
+
+        self.assertTrue(len(ret_method1[relation_name]) == 1)
+        relationship = ret_method1[relation_name][0]['relationship']
+        test_snode = relationship.start_node
+        test_enode = relationship.end_node
+        test_shandle_id = test_snode._properties['handle_id']
+        test_ehandle_id = test_enode._properties['handle_id']
+
+        self.assertEqual(test_shandle_id, group1_id)
+        self.assertEqual(test_ehandle_id, physical1_id)
+
+        # link group2 to physical1
+        link_method_2(physical1.handle_id)
+
+        # check is linked but not to group1
+        self.assertTrue(relation_name in group2.outgoing)
+        self.assertTrue(relation_name in physical1.incoming)
+
+        self.assertTrue(len(physical1.incoming[relation_name]) == 1)
+
+        relationship = group2.outgoing[relation_name][0]['relationship']
+        test_enode = relationship.end_node
+        test_ehandle_id = test_enode._properties['handle_id']
+        self.assertEqual(test_ehandle_id, physical1_id)
+
+        relationship = physical1.incoming[relation_name][0]['relationship']
+        test_snode = relationship.start_node
+        test_shandle_id = test_snode._properties['handle_id']
+        self.assertEqual(test_shandle_id, group2_id)
+
+        # link group2 to physical2
+        link_method_2(physical2.handle_id)
+
+        # check both are linked to group2
+        self.assertTrue(len(group2.outgoing[relation_name]) == 2)
+
+        self.assertTrue(relation_name in physical1.incoming)
+        self.assertTrue(relation_name in physical2.incoming)
+
+        relationship = physical1.incoming[relation_name][0]['relationship']
+        test_snode = relationship.start_node
+        test_shandle_id = test_snode._properties['handle_id']
+        self.assertEqual(test_shandle_id, group2_id)
+
+        relationship = physical2.incoming[relation_name][0]['relationship']
+        test_snode = relationship.start_node
+        test_shandle_id = test_snode._properties['handle_id']
+        self.assertEqual(test_shandle_id, group2_id)
+
+    def test_group_supports(self):
+        self.check_group_physical(
+            relation_name="Supports",
+            get_method="get_supports",
+            link_method="set_supports"
+        )
+
+    def test_group_takesresponsability(self):
+        self.check_group_physical(
+            relation_name="Takes_responsibility",
+            get_method="get_takes_responsibility",
+            link_method="set_takes_responsibility"
+        )
