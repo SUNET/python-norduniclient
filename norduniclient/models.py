@@ -1043,9 +1043,10 @@ class GroupModel(LogicalModel):
 
     def set_supports(self, ph_handle_id):
         q = """
-            MATCH (n:Node:Group {handle_id: {handle_id}}), (m:Node:Physical {handle_id: {ph_handle_id}})
+            MATCH (n:Node:Group {handle_id: {handle_id}}), (m:Node {handle_id: {ph_handle_id}})
             OPTIONAL MATCH (x:Node:Group)-[s:Supports]->(m)
             WHERE x.handle_id <> n.handle_id
+            AND m:Physical or m:Logical
             MERGE (n)-[r:Supports]->(m)
             DELETE s
             RETURN m as created, r, n as node
@@ -1055,16 +1056,18 @@ class GroupModel(LogicalModel):
 
     def get_supports(self):
         q = """
-            MATCH (n:Node:Group {handle_id: {handle_id}})-[r:Supports]->(m:Node:Physical)
+            MATCH (n:Node:Group {handle_id: {handle_id}})-[r:Supports]->(m:Node)
+            WHERE m:Physical or m:Logical
             RETURN n, r, m as node
             """
         return self._basic_read_query_to_dict(q)
 
     def set_takes_responsibility(self, ph_handle_id):
         q = """
-            MATCH (n:Node:Group {handle_id: {handle_id}}), (m:Node:Physical {handle_id: {ph_handle_id}})
+            MATCH (n:Node:Group {handle_id: {handle_id}}), (m:Node {handle_id: {ph_handle_id}})
             OPTIONAL MATCH (x:Node:Group)-[s:Takes_responsibility]->(m)
             WHERE x.handle_id <> n.handle_id
+            AND m:Physical or m:Logical
             MERGE (n)-[r:Takes_responsibility]->(m)
             DELETE s
             RETURN m as created, r, n as node
@@ -1075,6 +1078,7 @@ class GroupModel(LogicalModel):
     def get_takes_responsibility(self):
         q = """
             MATCH (n:Node:Group {handle_id: {handle_id}})-[r:Takes_responsibility]->(m:Node:Physical)
+            WHERE m:Physical or m:Logical
             RETURN n, r, m as node
             """
         return self._basic_read_query_to_dict(q)

@@ -971,8 +971,8 @@ class ModelsTests(Neo4jTestCase):
         self.assertTrue(expected_true)
         self.assertFalse(expected_false)
 
-    def check_group_physical(self, relation_name, get_method, link_method):
-        # a group can support multiple physical
+    def check_group_hostype(self, relation_name, get_method, link_method):
+        # a group can support multiple physical or logical
         # but a physical will have only one support group
 
         group1_id = '121'
@@ -988,14 +988,14 @@ class ModelsTests(Neo4jTestCase):
         link_method_2 = getattr(group2, link_method)
 
         physical1_id = '101'
-        physical2_id = '102'
+        logical1_id = '105'
 
         physical1 = core.get_node_model(self.neo4jdb, handle_id=physical1_id)
-        physical2 = core.get_node_model(self.neo4jdb, handle_id=physical2_id)
+        logical1 = core.get_node_model(self.neo4jdb, handle_id=logical1_id)
 
         # check relations in both nodes
         self.assertFalse(relation_name in physical1.incoming)
-        self.assertFalse(relation_name in physical2.incoming)
+        self.assertFalse(relation_name in logical1.incoming)
 
         self.assertFalse(relation_name in group1.outgoing)
         self.assertFalse(relation_name in group2.outgoing)
@@ -1056,34 +1056,34 @@ class ModelsTests(Neo4jTestCase):
         test_shandle_id = test_snode._properties['handle_id']
         self.assertEqual(test_shandle_id, group2_id)
 
-        # link group2 to physical2
-        link_method_2(physical2.handle_id)
+        # link group2 to logical1
+        link_method_2(logical1.handle_id)
 
         # check both are linked to group2
         self.assertTrue(len(group2.outgoing[relation_name]) == 2)
 
         self.assertTrue(relation_name in physical1.incoming)
-        self.assertTrue(relation_name in physical2.incoming)
+        self.assertTrue(relation_name in logical1.incoming)
 
         relationship = physical1.incoming[relation_name][0]['relationship']
         test_snode = relationship.start_node
         test_shandle_id = test_snode._properties['handle_id']
         self.assertEqual(test_shandle_id, group2_id)
 
-        relationship = physical2.incoming[relation_name][0]['relationship']
+        relationship = logical1.incoming[relation_name][0]['relationship']
         test_snode = relationship.start_node
         test_shandle_id = test_snode._properties['handle_id']
         self.assertEqual(test_shandle_id, group2_id)
 
     def test_group_supports(self):
-        self.check_group_physical(
+        self.check_group_hostype(
             relation_name="Supports",
             get_method="get_supports",
             link_method="set_supports"
         )
 
     def test_group_takesresponsability(self):
-        self.check_group_physical(
+        self.check_group_hostype(
             relation_name="Takes_responsibility",
             get_method="get_takes_responsibility",
             link_method="set_takes_responsibility"
