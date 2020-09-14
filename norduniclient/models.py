@@ -916,6 +916,25 @@ class FPCModel(SubEquipmentModel):
 class CustomerModel(RelationModel):
     pass
 
+
+class SiteModel(LocationModel):
+    def get_has_address(self):
+        q = """
+            MATCH (n:Node:Location:Site {handle_id: {handle_id}})-[r:Has_address]->(addr:Node:Logical:Address)
+            RETURN r, addr as node
+            """
+        return self.query_to_list(q)
+
+    def set_has_address(self, address_handle_id):
+        q = """
+            MATCH (n:Node:Location:Site {handle_id: {handle_id}}), (addr:Node:Logical:Address {handle_id: {address_handle_id}})
+            WITH n, addr, NOT EXISTS((n)-[:Has]->(addr)) as created
+            MERGE (n)-[r:Has_address]->(addr)
+            RETURN created, r, addr as node
+            """
+        return self._basic_write_query_to_dict(q, address_handle_id=address_handle_id)
+
+
 class OrganizationModel(RelationModel):
     def set_parent(self, org_handle_id, overwrite=False):
         q = """
