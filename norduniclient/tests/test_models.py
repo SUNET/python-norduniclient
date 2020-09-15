@@ -592,6 +592,29 @@ class ModelsTests(Neo4jTestCase):
         children = site1.get_has()
         self.assertEqual(len(children['Has']), 3)
 
+
+    def test_site_address(self):
+        site1 = core.get_node_model(self.neo4jdb, handle_id='11')
+        address1 = core.get_node_model(self.neo4jdb, handle_id='126')
+        address2 = core.get_node_model(self.neo4jdb, handle_id='127')
+
+        # set address
+        result1 = site1.set_has_address(address1.handle_id)
+        self.assertEqual(result1['Has_address'][0]['created'], True)
+        result2 = site1.set_has_address(address2.handle_id)
+        self.assertEqual(result2['Has_address'][0]['created'], True)
+
+        # get address
+        addresses = site1.get_has_address()
+        self.assertEqual(addresses['Has_address'][0]['node'], address2)
+        self.assertEqual(addresses['Has_address'][1]['node'], address1)
+
+        # remove address
+        site1.remove_has_address(address1.handle_id)
+        addresses = site1.get_has_address()
+        self.assertEqual(len(addresses), 1)
+
+
     def test_set_responsible_for_location_model(self):
         rack_4 = core.get_node_model(self.neo4jdb, handle_id='41')
         provider_2 = core.get_node_model(self.neo4jdb, handle_id='39')
